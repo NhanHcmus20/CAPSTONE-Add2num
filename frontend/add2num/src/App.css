@@ -76,5 +76,13 @@ h1 {
   border-radius: 7px;
   padding: 1px 3px 1px 3px ;
   margin: 0px 4px 0px 4px;
-
+background-color: aquamarine;
 } 
+
+.result-field{
+  background-color:rgb(222, 158, 158);
+  border-radius: 8px;
+  margin-right: 20%;
+  margin-top: 10%;
+  padding: 20px;
+}

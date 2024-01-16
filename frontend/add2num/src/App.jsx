@@ -1,13 +1,42 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import "../src/App.css"
-
-const API_URL = "this is api url"
-
+import database from "../firebase"
+import { getDatabase, ref, onValue, get, child, set } from "firebase/database"
+import Log from "./components/Log"
 function App() {
-  const [first, setFirst] = useState(" ")
-  const [second, setSecond] = useState(" ")
-  const [res, setRes] = useState(" ")
+  const [first, setFirst] = useState("")
+  const [second, setSecond] = useState("")
+  const [res, setRes] = useState("")
+  const [log, setLog] = useState({})
+  const dbRef = ref(getDatabase())
 
+  const getResultLog = () => {
+    get(child(dbRef, `OPS`))
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          setLog(snapshot.val())
+          // console.log(log)
+        } else {
+          console.log("No data available")
+        }
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+  }
+  useEffect(() => {
+    setLog(getResultLog())
+    console.log(log["Num1"])
+  }, [])
+
+  // function writeResultLog(num1, num2, res) {
+  //   const db = getDatabase()
+  //   set(ref(db, "OPS"), {
+  //     Num1: num1,
+  //     Num2: num2,
+  //     Res: res,
+  //   })
+  // }
   let add2number = (num1, num2) => {
     let carry = 0
     let sum = ""
@@ -23,16 +52,15 @@ function App() {
       carry = Math.floor(currentSum / 10)
       const currentDigit = currentSum % 10
 
-      // Prepend the current digit to the result
       sum = currentDigit + sum
     }
 
-    return sum;
+    return sum
   }
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("call api to calculate")
-    setRes("set to the result from api")
+    setRes(add2number(first, second))
+    console.log(res)
   }
 
   return (
@@ -64,6 +92,10 @@ function App() {
           </div>
           <div className="result-field">Result: {res}</div>
         </div>
+        {/* <Log
+          num1={log.Num1}
+          num2={log.Num2}
+          res={log.Res}></Log> */}
       </div>
     </>
   )
