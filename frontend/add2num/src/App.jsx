@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
 import "../src/App.css"
 import database from "../firebase"
-import { getDatabase, ref, onValue, get, child, set } from "firebase/database"
+import { getDatabase, ref, push, get, child, update } from "firebase/database"
 import Log from "./components/Log"
+
 function App() {
   const [first, setFirst] = useState("")
   const [second, setSecond] = useState("")
@@ -10,33 +11,46 @@ function App() {
   const [log, setLog] = useState({})
   const dbRef = ref(getDatabase())
 
-  const getResultLog = () => {
-    get(child(dbRef, `OPS`))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          setLog(snapshot.val())
-          // console.log(log)
-        } else {
-          console.log("No data available")
-        }
-      })
-      .catch((error) => {
-        console.error(error)
-      })
+  const getResultLog = async () => {
+    try {
+      const snapshot = await get(child(dbRef, `OPS`))
+      if (snapshot.exists()) {
+        setLog(snapshot.val())
+        console.log(snapshot.val()) // Log the updated state
+      } else {
+        console.log("No data available")
+      }
+    } catch (error) {
+      console.error(error)
+    }
   }
-  useEffect(() => {
-    setLog(getResultLog())
-    console.log(log["Num1"])
-  }, [])
 
-  // function writeResultLog(num1, num2, res) {
-  //   const db = getDatabase()
-  //   set(ref(db, "OPS"), {
-  //     Num1: num1,
-  //     Num2: num2,
-  //     Res: res,
-  //   })
-  // }
+  useEffect(() => {
+    getResultLog()
+  }, [res])
+
+  const writeResultLog = (num1, num2, res) => {
+    const db = getDatabase()
+
+    const newcal = {
+      Num1: num1,
+      Num2: num2,
+      Res: res,
+      // ... other properties of the log
+    }
+
+    const opsRef = ref(db, "OPS")
+    const newLogRef = push(opsRef)
+    const newLogKey = newLogRef.key
+
+    const updates = {}
+    update(newLogRef, newcal) // Updated this line
+
+    update(ref(db), updates)
+
+    getResultLog()
+  }
+
   let add2number = (num1, num2) => {
     let carry = 0
     let sum = ""
@@ -57,24 +71,25 @@ function App() {
 
     return sum
   }
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    setRes(add2number(first, second))
-    console.log(res)
+    const result = add2number(first, second)
+    await setRes(result)
+    await writeResultLog(first, second, result)
   }
 
   return (
     <>
       <div className="wrapper">
         <div className="content-field">
-          <h1>Add 2 big number</h1>
+          <h1>Add 2 big numbers</h1>
           <div className="input-field">
             <form onSubmit={handleSubmit}>
               <label>
                 First number:
                 <input
                   type="text"
-                  // pattern="[0-9]*"
                   value={first}
                   onChange={(e) => setFirst(e.target.value)}
                 />
@@ -92,10 +107,20 @@ function App() {
           </div>
           <div className="result-field">Result: {res}</div>
         </div>
-        {/* <Log
-          num1={log.Num1}
-          num2={log.Num2}
-          res={log.Res}></Log> */}
+        <div className="log-field content-field">
+          <h1>Previous calculations</h1>
+          {Object.values(log).map(
+            ({ Num1, Num2, Res }, index) =>
+              Res !== "" && (
+                <Log
+                  key={index}
+                  num1={Num1}
+                  num2={Num2}
+                  res={Res}
+                />
+              )
+          )}
+        </div>
       </div>
     </>
   )
